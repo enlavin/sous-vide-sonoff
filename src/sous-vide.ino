@@ -66,6 +66,12 @@ double autotune_step = 500, autotune_noise = 1, autotune_startvalue = 100;
 unsigned int autotune_lookback = 20;
 
 bool probe_error = false;
+double last_temp = PROBE_INIT_TEMP;
+unsigned long last_temp_sent;
+double temp_temp;
+unsigned int probe_errors = 0;
+unsigned int last_probed_temp = 0;
+
 
 char *float_to_str(double f)
 {
@@ -259,7 +265,7 @@ void setup()
   // initialize digital pin LED_PIN as an output.
   pinMode(LED_PIN, OUTPUT);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
+  relay.off();
 
   // temp probe settings (only 1 ds18b20 probe supported)
   sensors.begin();
@@ -277,8 +283,6 @@ void setup()
 
   Serial.begin(115200);
   start_wifi();
-  //connect_wifi();
-  //connect_mqtt_client();
   connect_all_the_things();
 
   // publish set points
@@ -286,7 +290,6 @@ void setup()
   mqtt_client.publish(MQTT_TOPIC_KP, float_to_str(pid_kp));
   mqtt_client.publish(MQTT_TOPIC_KI, float_to_str(pid_ki));
   mqtt_client.publish(MQTT_TOPIC_KD, float_to_str(pid_kd));
-  //mqtt_client.publish(MQTT_TOPIC_TUNING, "OFF");
   mqtt_client.publish(MQTT_TOPIC_PROBE_ERROR, "OFF");
 
   relay.off();
@@ -297,34 +300,22 @@ void setup()
   subscribe_mqtt_topics();
 }
 
-// the loop function runs over and over again forever
-//unsigned long now;
-double last_temp = PROBE_INIT_TEMP;
-unsigned long last_temp_sent;
-double temp_temp;
-unsigned int probe_errors = 0;
-unsigned int last_probed_temp = 0;
-
 void loop() 
 {
-  // check if wifi and mqtt are still alive every couple of minutes
-  // if (millis() - last_check_connectivity > CHECK_WIFI_INTERVAL)
-  // {
-  //   connect_all_the_things();
-  //   last_check_connectivity = millis();
-  // }
-
+  // Don't probe temp too fast or it will return errors  
   if (millis() - last_probed_temp > PROBE_TEMP_INTERVAL)
   {
     sensors.requestTemperatures();
     temp_temp = (double)sensors.getTempCByIndex(0);
 
-    // Temp does not change very fast. Sudden changes usually is a probe error
+    // Temp does not change very fast. Sudden changes usually are caused by a probe error
     if (temp_temp <= -127.0 
     || (pid_input != PROBE_INIT_TEMP && fabs(pid_input - temp_temp) > TEMP_PROBE_ERROR_THRESHOLD))
     {
         probe_errors++;
         Serial.write("Probe error\r\n");
+
+        // switch off the relay if the probe measurements are unreliable for too long
         if (millis() - last_temp_sent > SAFETY_INTERVAL)
         {
           if (relay.off())
@@ -352,41 +343,42 @@ void loop()
 
   pid_input = temp_temp; 
 
-  if (pid_tuning)
-  {
-      if (millis() - last_autotune_sent > 30000)
-      {
-        last_autotune_sent = millis();
-        mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KP, float_to_str(cooker_pid_autotune.GetKp()));
-        mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KI, float_to_str(cooker_pid_autotune.GetKi()));
-        mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KD, float_to_str(cooker_pid_autotune.GetKd()));
-      }
-
-      if (cooker_pid_autotune.Runtime())
-      {
-        pid_tuning = false;
-        mqtt_client.publish(MQTT_TOPIC_TUNING, "OFF");
-      }
-
-      if (!pid_tuning)
-      { //we're done, set the tuning parameters
-        pid_kp = cooker_pid_autotune.GetKp();
-        pid_ki = cooker_pid_autotune.GetKi();
-        pid_kd = cooker_pid_autotune.GetKd();
-        mqtt_client.publish(MQTT_TOPIC_KP, float_to_str(pid_kp));
-        mqtt_client.publish(MQTT_TOPIC_KI, float_to_str(pid_ki));
-        mqtt_client.publish(MQTT_TOPIC_KD, float_to_str(pid_kd));
-
-        cooker_pid.SetTunings(pid_kp, pid_ki, pid_kd);
-        cooker_pid.SetMode(autotune_mode_remember);
-        autotune_helper(false);
-      }
-  }
-  else
+  if (!pid_tuning)
   {
     cooker_pid.Compute();
   }
+  else
+  {
+    if (millis() - last_autotune_sent > 30000)
+    {
+      last_autotune_sent = millis();
+      mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KP, float_to_str(cooker_pid_autotune.GetKp()));
+      mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KI, float_to_str(cooker_pid_autotune.GetKi()));
+      mqtt_client.publish(MQTT_TOPIC_AUTOTUNE_KD, float_to_str(cooker_pid_autotune.GetKd()));
+    }
 
+    if (cooker_pid_autotune.Runtime())
+    {
+      pid_tuning = false;
+      mqtt_client.publish(MQTT_TOPIC_TUNING, "OFF");
+    }
+
+    if (!pid_tuning)
+    { //we're done, set the tuning parameters
+      pid_kp = cooker_pid_autotune.GetKp();
+      pid_ki = cooker_pid_autotune.GetKi();
+      pid_kd = cooker_pid_autotune.GetKd();
+      mqtt_client.publish(MQTT_TOPIC_KP, float_to_str(pid_kp));
+      mqtt_client.publish(MQTT_TOPIC_KI, float_to_str(pid_ki));
+      mqtt_client.publish(MQTT_TOPIC_KD, float_to_str(pid_kd));
+
+      cooker_pid.SetTunings(pid_kp, pid_ki, pid_kd);
+      cooker_pid.SetMode(autotune_mode_remember);
+      autotune_helper(false);
+    }
+  }
+
+  // reconnect if the connection to the MQTT broker is lost
   if (!mqtt_client.loop())
     connect_all_the_things();
 
@@ -414,6 +406,7 @@ void loop()
     last_temp_sent = millis();
   }
 
+  // PID time proportional output
   if (millis() - window_start_time > window_size)
   {
     window_start_time += window_size;
