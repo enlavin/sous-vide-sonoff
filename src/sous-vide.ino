@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <math.h>
-#include "credentials.h"
+#include "secrets.h"
 #include "relay.h"
 
 #define RELAY_PIN 12
