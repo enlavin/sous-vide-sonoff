@@ -24,11 +24,11 @@ To connect the temperature probe to the Sonoff I made a small hole to the plasti
 
 The project has been generated using the [PlatformIO](https://platformio.org/) environment with Visual Studio Code. Building the project with this ide is a matter of opening the folder and hitting "Build". You probably can use a different IDE to generate the binaries if you want to, but this seemed easy enough for me.
 
-The projects depend on a couple of libraries for Arduino, but PlatformIO takes care of retrieving them during the compilation:
+The project depends on a couple of libraries for Arduino, but PlatformIO takes care of retrieving them during the compilation:
 
-* OneWire, DallasTemperature
-* PID
-* PubSubClient
+* OneWire, DallasTemperature (temperature probe)
+* PID (PID controller)
+* PubSubClient (MQTT client)
 
 ## WiFi and MQTT
 
@@ -51,7 +51,7 @@ And the these every couple of second:
 * PID output
 * Relay status
 
-The controller also subscribes to some topics to configure the PID tuning parameters, that you can modify them using any MQTT client. I have been using [MQTT Dash](https://play.google.com/store/apps/details?id=net.routix.mqttdash) for Android, but you can use any other MQTT client.
+The controller also subscribes to some topics to configure the PID tuning parameters, that you can modify them using any MQTT client. I have been using [MQTT Dash](https://play.google.com/store/apps/details?id=net.routix.mqttdash) for Android, but you can use any other MQTT client. Take a look at the source code for the topic names.
 
 ## PID controller
 
