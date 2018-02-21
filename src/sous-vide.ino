@@ -53,7 +53,7 @@ DallasTemperature sensors(&oneWire);
 DeviceAddress temp_sensor;
 
 double pid_setpoint, pid_input = PROBE_INIT_TEMP, pid_output;
-double pid_kp = 0.0001, pid_ki = 450, pid_kd = 108.00;
+double pid_kp = 3000, pid_ki = 10, pid_kd = 6;
 int window_size = PID_WINDOW_SIZE;
 unsigned long window_start_time;
 PID cooker_pid(&pid_input, &pid_output, &pid_setpoint, pid_kp, pid_ki, pid_kd, DIRECT);
