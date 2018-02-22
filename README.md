@@ -38,20 +38,31 @@ To configure the WiFi password and the MQTT credentials you need to copy the fil
 
 The controller publishes the following topics on reboot, just after it connects to the WiFi:
 
-* Temperature
-* PID output
-* Relay status
-* PID Kp
-* PID Ki
-* PID Kd
+| Topic  | Description ||
+|-------|--------------|-----|
+|sous-vide/current_temp| Temperature | Numeric |
+|sous-vide/output| PID output |Numeric |
+|sous-vide/output_relay| Relay status | ON/OFF|
+|sous-vide/kp| PID Kp |Numeric|
+|sous-vide/ki| PID Ki |Numeric|
+|sous-vide/kd| PID Kd |Numeric|
 
-And the these every couple of second:
+These are sent every couple of second so you can capture them and use the data to monitor the process and generate charts:
 
-* Temperature
-* PID output
-* Relay status
+| Topic  | Description ||
+|-------|--------------|--|
+|sous-vide/current_temp| Temperature |Numeric|
+|sous-vide/output| PID output |Numeric|
+|sous-vide/output_relay| Relay status | ON/OFF|
 
 The controller also subscribes to some topics to configure the PID tuning parameters, that you can modify them using any MQTT client. I have been using [MQTT Dash](https://play.google.com/store/apps/details?id=net.routix.mqttdash) for Android, but you can use any other MQTT client. Take a look at the source code for the topic names.
+
+If there is a probe error for a significant amount of time the controller switches off and it will send a notification
+
+| Topic  | Description ||
+|-------|--------------|--|
+|sous-vide/probe_error| Probe error |ON/OFF|
+
 
 ## PID controller
 
