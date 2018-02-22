@@ -1,24 +1,28 @@
 # Sous vide controller firmware for Sonoff Basic
 
-I wanted a simple temperature controller to try sous vide cooking without breaking the bank. On Christmas I got some Sonoff Basic switches to automate a couple of lights at home and I decided they would be a great platform to run a temperature controller:
+I wanted a simple temperature controller to try sous vide cooking without breaking the bank. There are some DIY projects around using commercial temperature controllers which end up quite cheap in the end, but I wanted to learn something new in the process.
+
+Last Christmas I got a couple of Sonoff Basic switches to automate some lights at home and I decided they would be a great platform to run a custom temperature controller:
 
 * Arduino compatible esp8266 (WiFi and all)
 * Access to a GPIO pin for the temperature probe (after some [hardware modifications](https://github.com/arendst/Sonoff-Tasmota/wiki/Sonoff-Basic))
 * Included relay to switch a heating element on/off
+* Case included
 * Really cheap
 
 ## BOM
 
-* Sonoff Basic (I got mine from Aliexpress)
-* DS18B20 sumersible probe
-* Rice cooker for the heating element
-* USB 3.3V TTL serial converter to reprogram the Sonoff
+* Sonoff Basic (I got mine from Aliexpress, about 5 euro)
+* DS18B20 sumersible probe (3 euro)
+* Rice cooker for the heating element (I had one already, 20 euro)
+* USB 3.3V TTL serial converter to reprogram the Sonoff (1 euro)
+* Electric supplies like cable for 10A, sockets (6 euro)
+
+Total is about 30 euro. And considering that I already had most the components except for the Sonoff it ended up very cheap indeed. The electric supplies were more expensive than the Sonoff! Go figure...
 
 The DS18B20 can work with 3.3V and it's heat resistant in the range of temperatures at which sous vide cooking usually take place. The accuracy of the probe is 0.5 and the resolution at 12 bits can be as much as 0.0625 degrees Celsius, enough for this project.
 
-Hardware wise this project is quite simple: just connect the rice cooker to the Sonoff and set the cooker settings to max, if any.
-
-To connect the temperature probe to the Sonoff I made a small hole to the plastic case and got a 5 cable header out for the 5 pins in the Sonoff motherboard. The probe goes to the GPIO14 pin.
+Hardware wise this project is quite simple: just connect the rice cooker to the Sonoff and set the cooker settings to max, if any. To connect the temperature probe to the Sonoff I made a small hole to the plastic case and got a 5 cable header out for the 5 pins in the Sonoff motherboard. The probe goes to the GPIO14 pin.
 
 ## Software Requirements
 
