@@ -26,6 +26,11 @@ The DS18B20 can work with 3.3V and it's heat resistant in the range of temperatu
 
 Hardware wise this project is quite simple: just connect the rice cooker to the Sonoff and set the cooker settings to max, if any. To connect the temperature probe to the Sonoff I made a small hole to the plastic case and got a 5 cable header out for the 5 pins in the Sonoff motherboard. The probe goes to the GPIO14 pin.
 
+![Pin headers](https://i.imgur.com/zOw0BZo.jpg)
+![Updating the firmware](https://i.imgur.com/JemPHn6.jpg)
+
+In my case I have exposed the 3V3 and GND pins of the Sonoff basic. Be very careful to not use the 3V3 pin while connected to AC. It will short the power supply and you will get an unsolicited amount of smoke and disappointment. Use the Sonoff-Tasmota project ![documentation](https://github.com/arendst/Sonoff-Tasmota/wiki/Hardware-Preparation) if you need further details.
+
 ## Software Requirements
 
 The project has been generated using the [PlatformIO](https://platformio.org/) environment with Visual Studio Code. Building the project with this ide is a matter of opening the folder and hitting "Build". You probably can use a different IDE to generate the binaries if you want to, but this seemed easy enough for me.
