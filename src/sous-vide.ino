@@ -52,11 +52,11 @@ OneWire oneWire(ONE_WIRE_BUS_PIN);
 DallasTemperature sensors(&oneWire);
 DeviceAddress temp_sensor;
 
-double pid_setpoint, pid_input = PROBE_INIT_TEMP, pid_output;
-double pid_kp = 3000, pid_ki = 10, pid_kd = 6;
+double pid_setpoint = 62, pid_input = PROBE_INIT_TEMP, pid_output;
+double pid_kp = 60, pid_ki = 1, pid_kd = 5;
 int window_size = PID_WINDOW_SIZE;
 unsigned long window_start_time;
-PID cooker_pid(&pid_input, &pid_output, &pid_setpoint, pid_kp, pid_ki, pid_kd, DIRECT);
+PID cooker_pid(&pid_input, &pid_output, &pid_setpoint, pid_kp, pid_ki, pid_kd, P_ON_M, DIRECT);
 
 // autotune support
 PID_ATune cooker_pid_autotune(&pid_input, &pid_output);
@@ -274,10 +274,9 @@ void setup()
   //sensors.setWaitForConversion(true);
 
   // PID settings
-  pid_setpoint = 60.0;
   pid_tuning = false;
   window_start_time = millis();
-  cooker_pid.SetSampleTime(200);
+  cooker_pid.SetSampleTime(1000);
   cooker_pid.SetOutputLimits(0, window_size);
   cooker_pid.SetMode(AUTOMATIC);
 
