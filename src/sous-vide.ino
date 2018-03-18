@@ -41,11 +41,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length);
 #define PROBE_INIT_TEMP -2000
 #define PROBE_TEMP_INTERVAL 2000
 
-//IPAddress ip(10, 10, 33, 200);
-//IPAddress gw(10, 10, 33, 253);
-//IPAddress net(255, 255, 255, 0);
-//IPAddress dns(8, 8, 8, 8);
-
 WiFiClient wifi_client;
 PubSubClient mqtt_client(MQTT_SERVER, 1883, mqtt_callback, wifi_client);
 OneWire oneWire(ONE_WIRE_BUS_PIN);
@@ -53,7 +48,7 @@ DallasTemperature sensors(&oneWire);
 DeviceAddress temp_sensor;
 
 double pid_setpoint = 62, pid_input = PROBE_INIT_TEMP, pid_output;
-double pid_kp = 60, pid_ki = 1, pid_kd = 5;
+double pid_kp = 2500, pid_ki = 3, pid_kd = 0;
 int window_size = PID_WINDOW_SIZE;
 unsigned long window_start_time;
 PID cooker_pid(&pid_input, &pid_output, &pid_setpoint, pid_kp, pid_ki, pid_kd, P_ON_M, DIRECT);
