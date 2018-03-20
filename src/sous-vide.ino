@@ -41,6 +41,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length);
 #define PROBE_INIT_TEMP -2000
 #define PROBE_TEMP_INTERVAL 2000
 
+#define NO_PID_THRESHOLD 4
+#define NO_PID_OUTPUT_RESET 2000
+
 WiFiClient wifi_client;
 PubSubClient mqtt_client(MQTT_SERVER, 1883, mqtt_callback, wifi_client);
 OneWire oneWire(ONE_WIRE_BUS_PIN);
@@ -48,7 +51,7 @@ DallasTemperature sensors(&oneWire);
 DeviceAddress temp_sensor;
 
 double pid_setpoint = 62, pid_input = PROBE_INIT_TEMP, pid_output;
-double pid_kp = 2500, pid_ki = 3, pid_kd = 0;
+double pid_kp = 2500, pid_ki = 4, pid_kd = 0;
 int window_size = PID_WINDOW_SIZE;
 unsigned long window_start_time;
 PID cooker_pid(&pid_input, &pid_output, &pid_setpoint, pid_kp, pid_ki, pid_kd, P_ON_M, DIRECT);
@@ -66,6 +69,10 @@ unsigned long last_temp_sent;
 double temp_temp;
 unsigned int probe_errors = 0;
 unsigned int last_probed_temp = 0;
+unsigned long last_autotune_sent;
+unsigned long last_check_connectivity;
+
+Relay relay(RELAY_PIN, LED_PIN);
 
 
 char *float_to_str(double f)
@@ -249,11 +256,6 @@ void subscribe_mqtt_topics()
   mqtt_client.subscribe(MQTT_TOPIC_TUNING);
 }
 
-unsigned long last_autotune_sent;
-unsigned long last_check_connectivity;
-
-Relay relay(RELAY_PIN, LED_PIN);
-
 // the setup function runs once when you press reset or power the board
 void setup() 
 {
@@ -400,14 +402,12 @@ void loop()
     last_temp_sent = millis();
   }
 
-  // PID time proportional output
-  if (millis() - window_start_time > window_size)
+  // when the setpoint is too far just hit the pedal at max speed
+  if (pid_setpoint - pid_input > NO_PID_THRESHOLD)
   {
-    window_start_time += window_size;
-  }
+    if (cooker_pid.GetMode() == AUTOMATIC)
+      cooker_pid.SetMode(MANUAL);
 
-  if (pid_output > millis() - window_start_time)
-  {
     if (relay.on())
     {
       Serial.write("Output ");
@@ -417,11 +417,35 @@ void loop()
   }
   else
   {
-    if (relay.off())
+    if (cooker_pid.GetMode() == MANUAL)
     {
-      Serial.write("Output ");
-      mqtt_client.publish(MQTT_TOPIC_RELAY_ACTIVE, "OFF");
-      Serial.write("OFF\r\n");
+      pid_output = NO_PID_OUTPUT_RESET;
+      cooker_pid.SetMode(AUTOMATIC);
+    }
+
+    // PID time proportional output
+    if (millis() - window_start_time > window_size)
+    {
+      window_start_time += window_size;
+    }
+
+    if (pid_output > millis() - window_start_time)
+    {
+      if (relay.on())
+      {
+        Serial.write("Output ");
+        mqtt_client.publish(MQTT_TOPIC_RELAY_ACTIVE, "ON");
+        Serial.write("ON\r\n");
+      }
+    }
+    else
+    {
+      if (relay.off())
+      {
+        Serial.write("Output ");
+        mqtt_client.publish(MQTT_TOPIC_RELAY_ACTIVE, "OFF");
+        Serial.write("OFF\r\n");
+      }
     }
   }
 }
